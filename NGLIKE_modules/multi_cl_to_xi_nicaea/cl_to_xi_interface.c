@@ -25,6 +25,7 @@ typedef struct cl_to_xi_config {
     char * output_section;
     corr_type_t corr_type;
     filter_type_t filter_type;
+		int ndraw;
 
 } cl_to_xi_config;
 
@@ -33,6 +34,7 @@ void * setup(c_datablock * options)
 {
     cl_to_xi_config * config = malloc(sizeof(cl_to_xi_config));
     int corr_type,filter_type;
+		int ndraw;
     int status = 0;
     bool auto_corr;
 
@@ -40,6 +42,8 @@ void * setup(c_datablock * options)
     char *output_string=malloc(100*sizeof(char));
 
     status |= c_datablock_get_int_default(options, OPTION_SECTION, "corr_type", 0, &corr_type);
+
+    status |= c_datablock_get_int_default(options, OPTION_SECTION, "ndraw", 100, &ndraw);
 
     status |= c_datablock_get_int_default(options, OPTION_SECTION, "filter_type", 0, &filter_type);
 
@@ -91,6 +95,7 @@ void * setup(c_datablock * options)
 
     config->corr_type = (corr_type_t)corr_type;
     config->filter_type = (filter_type_t)filter_type;
+    config->ndraw = (int)ndraw;
 
     if (status){
       fprintf(stderr, "Please specify input_section_name, output_section_name, filter_type=0,1, and corr_type=0,1, or 2 in the cl_to_xi module.\n");
@@ -259,7 +264,7 @@ int execute(c_datablock * block, void * config_in)
     bool found_any = false;
     for (int i_bin=1; i_bin<=num_z_bin_A; i_bin++) {
         for (int j_bin=1; j_bin<=num_z_bin_B; j_bin++) {
-          for (int number_of_bin = 1; number_of_bin <= 100; number_of_bin++){
+          for (int number_of_bin = 1; number_of_bin <= config->ndraw; number_of_bin++){
             // read in C(l)
             double * C_ell;
             snprintf(name_in, 64, "bin_%d_%d_%d",i_bin,j_bin, number_of_bin);
