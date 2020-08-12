@@ -2,3 +2,7 @@
 *.swp
 *.o
 *.so
+
+NGLIKE_output_test_KDE/
+multi_galaxy_xi/
+
