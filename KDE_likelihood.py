@@ -3,6 +3,7 @@ from cosmosis.datablock import names, SectionOptions
 #from multi_twopoint_cosmosis import theory_names, type_table
 from twopoint_cosmosis import theory_names, type_table
 import twopoint
+from spec_tools import SpectrumInterp
 
 class KDELikelihood (object):
 
@@ -178,8 +179,56 @@ class KDELikelihood (object):
 		angle_vector = []
 		bin1_vector = []
 		bin2_vector = []
+		for (b1, b2, angle) in zip(spectrum.bin1, spectrum.bin2, spectrum.angle):
+			# We are going to be making splines for each pair of values that we need.
+      # We make splines of these and cache them so we don't re-make them for every
+      # different theta/ell data point
+			if (b1, b2) in bin_data:
+				# either use the cached spline
+				theory_spline = bin_data[(b1, b2)]
+			else:
+				# or make a new cache value
+				# load from the data block and make a spline
+				# and save it
+				if block.has_value(section, y_name.format(b1, b2)):
+					theory = block[section, y_name.format(b1, b2)]
+				# It is okay to swap if the spectrum types are the same - symmetrical
+				elif block.has_value(section, y_name.format(b2, b1)) and spectrum.type1 == spectrum.type2:
+					theory = block[section, y_name.format(b2, b1)]
+				else:
+					raise ValueError("Could not find theory prediction {} in section {}".format(y_name.format(b1, b2), section))
+				#theory_spline = interp1d(angle_theory, theory)
+				theory_spline = SpectrumInterp(angle_theory, theory)
+				bin_data[(b1, b2)] = theory_spline
+				# This is a bit silly, and is a hack because the
+				# book-keeping is very hard.
+				bin_data[y_name.format(b1, b2)] = theory_spline
 
-###RIPRENDERE DA QUI
+
+			# use our spline - interpolate to this ell or theta value
+			# and add to our list
+			try:
+				theory = theory_spline(angle)
+			except ValueError:
+				raise ValueError ("""Tried to get theory prediction for {} {}, but ell or theta value ({}) was out of range.
+           "Maybe increase the range when computing/projecting or check units?""".format(section, y_name.format(b1, b2), angle))
+			theory_vector.append(theory)
+			angle_vector.append(angle)
+			bin1_vector.append(b1)
+			bin2_vector.append(b2)
+
+		# We are saving the theory splines as we may need them
+		# to calculate covariances later
+		self.theory_splines[section] = bin_data
+
+		# Return the whole collection as an array
+		theory_vector = np.array(theory_vector)
+
+		# For convenience we also save the angle vector (ell or theta)
+		# and bin indices
+		angle_vector = np.array(angle_vector)
+		bin1_vector = np.array(bin1_vector, dtype=int)
+		bin2_vector = np.array(bin2_vector, dtype=int)
 
 		return theory_vector, angle_vector, bin1_vector, bin2_vector
 
@@ -188,6 +237,11 @@ class KDELikelihood (object):
 		#get data x by interpolation
 		x = np.atleast_1d(self.extract_theory_points(block))
 		mu = np.atleast_1d(self.data_y)
+
+		print ("Per iniziare, la teoria")
+		print (x)
+		print ("E adesso i dati")
+		print (mu)
 
 		like = sum (mu) - sum (x)
 		block[names.likelihoods, self.like_name+"_LIKE"] = like
