@@ -3,6 +3,8 @@
 *.o
 *.so
 
+*BACKUP
+
 NGLIKE_output_test_KDE/
 multi_galaxy_xi/
 

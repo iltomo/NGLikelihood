@@ -1,7 +1,7 @@
 import numpy as np
 from cosmosis.datablock import names, SectionOptions
-#from multi_twopoint_cosmosis import theory_names, type_table
-from twopoint_cosmosis import theory_names, type_table
+from multi_twopoint_cosmosis import theory_names, type_table
+#from twopoint_cosmosis import theory_names, type_table
 import twopoint
 from spec_tools import SpectrumInterp
 
@@ -179,6 +179,9 @@ class KDELikelihood (object):
 		angle_vector = []
 		bin1_vector = []
 		bin2_vector = []
+
+		num_of_draw = 1
+
 		for (b1, b2, angle) in zip(spectrum.bin1, spectrum.bin2, spectrum.angle):
 			# We are going to be making splines for each pair of values that we need.
       # We make splines of these and cache them so we don't re-make them for every
@@ -190,19 +193,19 @@ class KDELikelihood (object):
 				# or make a new cache value
 				# load from the data block and make a spline
 				# and save it
-				if block.has_value(section, y_name.format(b1, b2)):
-					theory = block[section, y_name.format(b1, b2)]
+				if block.has_value(section, y_name.format(b1,b2,num_of_draw)):
+					theory = block[section, y_name.format(b1,b2,num_of_draw)]
 				# It is okay to swap if the spectrum types are the same - symmetrical
-				elif block.has_value(section, y_name.format(b2, b1)) and spectrum.type1 == spectrum.type2:
-					theory = block[section, y_name.format(b2, b1)]
+				elif block.has_value(section, y_name.format(b1,b2,num_of_draw)) and spectrum.type1 == spectrum.type2:
+					theory = block[section, y_name.format(b1,b2,num_of_draw)]
 				else:
-					raise ValueError("Could not find theory prediction {} in section {}".format(y_name.format(b1, b2), section))
+					raise ValueError("Could not find theory prediction {} in section {}".format(y_name.format(b1,b2,num_of_draw), section))
 				#theory_spline = interp1d(angle_theory, theory)
 				theory_spline = SpectrumInterp(angle_theory, theory)
 				bin_data[(b1, b2)] = theory_spline
 				# This is a bit silly, and is a hack because the
 				# book-keeping is very hard.
-				bin_data[y_name.format(b1, b2)] = theory_spline
+				bin_data[y_name.format(b1,b2,num_of_draw)] = theory_spline
 
 
 			# use our spline - interpolate to this ell or theta value
@@ -211,7 +214,7 @@ class KDELikelihood (object):
 				theory = theory_spline(angle)
 			except ValueError:
 				raise ValueError ("""Tried to get theory prediction for {} {}, but ell or theta value ({}) was out of range.
-           "Maybe increase the range when computing/projecting or check units?""".format(section, y_name.format(b1, b2), angle))
+           "Maybe increase the range when computing/projecting or check units?""".format(section, y_name.format(b1,b2,num_of_draw), angle))
 			theory_vector.append(theory)
 			angle_vector.append(angle)
 			bin1_vector.append(b1)
