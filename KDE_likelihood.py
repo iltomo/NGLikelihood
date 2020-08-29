@@ -1,5 +1,5 @@
 import numpy as np
-from cosmosis.datablock import names, SectionOptions
+from cosmosis.datablock import names, SectionOptions, option_section
 from multi_twopoint_cosmosis import theory_names, type_table
 #from twopoint_cosmosis import theory_names, type_table
 import twopoint
@@ -12,6 +12,7 @@ class KDELikelihood (object):
 	def __init__ (self, options):
 		self.options=options
 		self.data_x, self.data_y = self.build_data()
+		self.ndraw = self.options.get_int ("ndraw", default=100) 
 
 	def build_data (self):
 		filename = self.options.get_string('data_file')
@@ -123,12 +124,23 @@ class KDELikelihood (object):
 		dataset_name = []
 
 		# Now we actually loop through our data sets
+		theory_n = []
 		for spectrum in self.two_point_data.spectra:
-			theory_vector, angle_vector, bin1_vector, bin2_vector = self.extract_spectrum_prediction(block, spectrum)
-			theory.append(theory_vector)
+			theory_vector, angle_vector, bin1_vector, bin2_vector = self.extract_spectrum_prediction(block, spectrum, 1)
+			theory_n.append(theory_vector)
 			angle.append(angle_vector)
 			bin1.append(bin1_vector)
 			bin2.append(bin2_vector)
+		theory_n = np.concatenate (theory_n)
+		theory.append (theory_n)
+
+		for num_of_draw in range (2, self.ndraw+1):
+			theory_n = []
+			for spectrum in self.two_point_data.spectra:
+				theory_vector, angle_vector, bin1_vector, bin2_vector = self.extract_spectrum_prediction(block, spectrum, num_of_draw)
+				theory_n.append(theory_vector)
+			theory_n = np.concatenate (theory_n)
+			theory.append (theory_n)
 
 		# We also collect the ell or theta values.
 		# The gaussian likelihood code itself is not expecting these,
@@ -142,13 +154,13 @@ class KDELikelihood (object):
 		block[names.data_vector, self.like_name + "_bin2"] = bin2
 		# block[names.data_vector, self.like_name+"_name"] = dataset_name
 
-		# the thing it does want is the theory vector, for comparison with
-		# the data vector
-		theory = np.concatenate(theory)
+## the thing it does want is the theory vector, for comparison with
+## the data vector
+#theory = np.concatenate(theory)
 		
 		return theory
 
-	def extract_spectrum_prediction (self, block, spectrum):
+	def extract_spectrum_prediction (self, block, spectrum, num_of_draw):
 		# We may need theory predictions for multiple different
 		# types of spectra: e.g. shear-shear, pos-pos, shear-pos.
 		# So first we find out from the spectrum where in the data
@@ -179,8 +191,6 @@ class KDELikelihood (object):
 		angle_vector = []
 		bin1_vector = []
 		bin2_vector = []
-
-		num_of_draw = 1
 
 		for (b1, b2, angle) in zip(spectrum.bin1, spectrum.bin2, spectrum.angle):
 			# We are going to be making splines for each pair of values that we need.
@@ -243,10 +253,12 @@ class KDELikelihood (object):
 
 		print ("Per iniziare, la teoria")
 		print (x)
+		print (x[0])
+		print (x[1])
 		print ("E adesso i dati")
 		print (mu)
 
-		like = sum (mu) - sum (x)
+		like = sum (mu+x[0]+x[1])
 		block[names.likelihoods, self.like_name+"_LIKE"] = like
 	
 	def cleanup (self):		
