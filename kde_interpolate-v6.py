@@ -57,7 +57,7 @@ def log_like(dataset, wtheta_values):
 
 # In[3]:
 
-input_fits = fits.open('/Users/vsterra/Documents/master/cosmosis/cosmosis-standard-library/likelihood/des-y1/2pt_NG_mcal_1110.fits')
+input_fits = fits.open('/Users/iltomo/cosmosis-docker/cosmosis/cosmosis-standard-library/likelihood/des-y1/2pt_NG_mcal_1110.fits')
 theta_des = input_fits['wtheta'].data['ANG']
 wtheta_des = input_fits['wtheta'].data['VALUE']
 

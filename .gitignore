@@ -2,6 +2,7 @@
 *.swp
 *.o
 *.so
+*.ipynb
 
 *BACKUP
 

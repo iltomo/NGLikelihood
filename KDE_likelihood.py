@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.neighbors import KernelDensity
 from cosmosis.datablock import names, SectionOptions, option_section
 from multi_twopoint_cosmosis import theory_names, type_table
 #from twopoint_cosmosis import theory_names, type_table
@@ -245,20 +246,46 @@ class KDELikelihood (object):
 
 		return theory_vector, angle_vector, bin1_vector, bin2_vector
 
+	def KDE_pdf (self, data, kernel = 'gaussian'):
+		data = data.reshape (-1,1)
+
+		#Define Bandwidth as the pratical computation
+		bandwidth = np.abs (1.06 * np.std(data) * len (data)**(-1./5.))
+
+		#Fit Kernel Density Estimation from dataset
+		kde = KernelDensity(kernel='gaussian', bandwidth=bandwidth).fit(data)
+
+		return kde
+
+	def proba_kde (self, datapoint, kde):
+		log_dens = kde.score_samples (datapoint)
+		return log_dens
+
+	def log_kde_like (self, theory_array, datavector):
+
+		#Create Kernels
+		aux_kde = []
+		for i in range (len (datavector)):
+			aux_kde.append (self.KDE_pdf (theory_array[i], kernel = 'gaussian'))
+
+		#Choosen DataPoints to estimate Likelihood 
+		aux_mean = np.array (datavector).reshape (-1,1)
+
+		#Estimate Log Likelihood
+		log_like = 0
+		for i in range (len (datavector)):
+			log_like = log_like + self.proba_kde (aux_mean[i].reshape(-1,1), kde = aux_kde [i])
+
+		return log_like [0]
+
 	def do_likelihood (self, block):
 
 		#get data x by interpolation
 		x = np.atleast_1d(self.extract_theory_points(block))
 		mu = np.atleast_1d(self.data_y)
 
-		print ("Per iniziare, la teoria")
-		print (x)
-		print (x[0])
-		print (x[1])
-		print ("E adesso i dati")
-		print (mu)
-
-		like = sum (mu+x[0]+x[1])
+		x_adapted = np.reshape (np.concatenate (x), (len(x),len(mu))).T
+		like = self.log_kde_like (x_adapted, mu)
 		block[names.likelihoods, self.like_name+"_LIKE"] = like
 	
 	def cleanup (self):		
