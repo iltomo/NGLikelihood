@@ -3,6 +3,9 @@
 *.o
 *.so
 *.ipynb
+*.out
+*.sh
+*.fits
 
 *BACKUP
 

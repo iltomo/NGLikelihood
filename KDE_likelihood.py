@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 from sklearn.neighbors import KernelDensity
 from cosmosis.datablock import names, SectionOptions, option_section
 from multi_twopoint_cosmosis import theory_names, type_table
