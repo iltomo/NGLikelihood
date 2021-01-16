@@ -282,7 +282,7 @@ class KDELikelihood (object):
 	def do_likelihood (self, block):
 
 		#get data x by interpolation
-		x = np.atleast_1d(self.extract_theory_points(block))
+		x = (60*180/np.pi)*np.atleast_1d(self.extract_theory_points(block))
 		mu = np.atleast_1d(self.data_y)
 
 		x_adapted = np.reshape (np.concatenate (x), (len(x),len(mu))).T
